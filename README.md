@@ -13,6 +13,8 @@ test condition and their specified data files are compared with TnSeqAnalysis.sh
 See below for specific usage details and software dependencies. Please direct any
 questions on their use or construction to Keith H. Turner (khturner at utexas.edu).
 
+As of May 2015, this version of scripts is maintained by Sean Leonard (sean.p.leonard at utexas.edu).
+Scripts were updated to use DEseq2 for analyses.
 
 TnSeq.sh
 ===========

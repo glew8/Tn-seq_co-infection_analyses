@@ -26,7 +26,7 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	}
 	
 	# Normalize data by reads/site
-	library(DESeq)
+	library(DESeq2)
 	sitescds <- sites[,2:length(sites)] %>% round %>% newCountDataSet(c(rep(ctrl_pfx, ctrl_reps), rep(test_pfx, test_reps)))
 	sitescds <- estimateSizeFactors(sitescds)
 	counts.norm <- counts(sitescds, normalized=T)
