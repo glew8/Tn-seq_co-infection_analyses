@@ -21,7 +21,7 @@ while (<STDIN>) {
 		open SEARCHRES, "www_bfind_sub?dbkey=genes&keywords=$locus_tag" or die "Unable to open file www_bfind_sub?dbkey=genes&keywords=$locus_tag for reading data: $!\n";
 		undef($gene);
 		while (($html = <SEARCHRES>) && !(defined $gene)) {
-			$matchstring = "<div style=\"width:600px\"><a href=\"\\/dbget-bin\\/www_bget\\?(...:$locus_tag)\">[^<]+<";
+			$matchstring = "<div style=\"width:600px\"><a href=\"\\/dbget-bin\\/www_bget\\?(....:$locus_tag)\">[^<]+<";
 			if ( $html =~ /$matchstring/ ) {
 				$gene = $1;
 			}

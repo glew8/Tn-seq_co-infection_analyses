@@ -89,11 +89,11 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	genescds$sizeFactor <- rep(1, length(genecounts[1,])) # This is manually set as 1 because we normalized by site above
 	#genescds <- estimateDispersions(genescds, fitType="local", sharingMode="fit-only") # Use this if estimateDispersions fails
 	genescds <- estimateDispersions(genescds)
-	res <- nbinomTest(genescds, ctrl_pfx, test_pfx) %>% tbl_df
+	res <- nbinomTest(genescds, ctrl_pfx, test_pfx) 
 	colnames(res)[3] <- paste(ctrl_pfx, "Mean", sep="")
 	colnames(res)[4] <- paste(test_pfx, "Mean", sep="")
-	#res <- cbind(res, genes[,2:5], numsites) %>% tbl_df # Uncomment if you have a kegg annotation
-	res <- cbind(res, genes[,1:2], numsites) %>% tbl_df # Uncomment if you do not have a kegg annotation
+	res <- cbind(res, genes[,2:5], numsites) # Uncomment if you have a kegg annotation
+	#res <- cbind(res, genes[,1:2], numsites) %>% tbl_df # Uncomment if you do not have a kegg annotation
 	write.table(res, file=paste(out_pfx, ".DESeq.tsv", sep=""), quote=FALSE, row.names=FALSE, sep="\t")
 	return(res)
 }
