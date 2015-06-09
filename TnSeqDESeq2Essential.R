@@ -14,8 +14,8 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	sites[is.na(sites)] <- 0
 
 	# OPTIONAL - perform site filtering. Example: only consider sites identified in both of 2 replicates
-	#sites <- sites %>% mutate(numreps = (V1 > 0) + (V2 > 0)) %>% filter(numreps == 2)
-	#sites <- sites[-4]
+	sites <- sites %>% mutate(numreps = (V1 > 0) + (V2 > 0)) %>% filter(numreps == 2)
+	sites <- sites[-4]
 	
 	# LOESS smooth data
 	for (i in 2:(length(sites))) { 
