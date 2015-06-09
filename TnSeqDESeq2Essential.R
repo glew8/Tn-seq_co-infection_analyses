@@ -27,17 +27,20 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 
 	# Normalize data by reads/site
 	library(DESeq2)
-	sitescds <- sites[,2:length(sites)] %>% round %>% newCountDataSet(c(rep(ctrl_pfx, ctrl_reps)))
+	colData <- data.frame(c(rep(ctrl_pfx, ctrl_reps)), condition = rep("untreated", ctrl_reps))
+	sitescds <- sites[,2:length(sites)] %>% round %>% DESeqDataSetFromMatrix(colData = colData, design= ~ 1)
 	sitescds <- estimateSizeFactors(sitescds)
+	
 	counts.norm <- counts(sitescds, normalized=T)
 	rownames(counts.norm) <- sites$Pos
 	
 	# Initialize the list of genes, determine genome length
-	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE) 
-	colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "x")
-	genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
-	gff <- tail(gff, n=-5)
-	gff <- gff[(gff$feature=="gene"),]
+	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, skip=2, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")) 
+	#colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")
+	#genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
+	genomelength <- as.numeric(max(gff$end))
+	gff <- tail(gff, n=-2)
+	gff <- gff[(gff$feature=="CDS"),]
 
 	# Generate pseudo-datasets with the same number of insertion sites and total reads mapping to those sites, randomly distributed across the genome
 	print("Generating pseudo-datasets")
@@ -58,14 +61,14 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	controlreps <- 0
 	expreps <- 0
 	for (c in 1:length(counts.norm[1,])) {
-		gff[,c+9] <- rep(1,length(gff[,1]))
+		gff[,c+11] <- rep(1,length(gff[,1]))
 		if (controlreps < ctrl_reps) {
 			controlreps <- controlreps + 1
-			colnames(gff)[c+9] <- paste(ctrl_pfx, controlreps, sep=".")
+			colnames(gff)[c+11] <- paste(ctrl_pfx, controlreps, sep=".")
 		}
 		else {
 			expreps <- expreps + 1
-			colnames(gff)[c+9] <- paste("Expected", expreps, sep=".")
+			colnames(gff)[c+11] <- paste("Expected", expreps, sep=".")
 		}
 	}
 
@@ -73,46 +76,56 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	print("Binning read counts by gene boundaries")
 	boundariesfile <- paste(out_pfx, ".boundaries.tsv", sep="")
 	sitecountsfile <- paste(out_pfx, ".sitecounts.tsv", sep="")
-	write.table(gff[,c(4,5, 10:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
+	write.table(gff[,c(4,5, 12:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
 	write.table(counts.df, sitecountsfile, quote=FALSE, sep="\t", row.names=F)
-	system(paste("TnGeneBin.pl", boundariesfile, sitecountsfile))
+	system(paste("perl TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
 	numsites <- read.table(paste(boundariesfile, "numsites.out", sep="."), header=T)[,-c(1,2)]
-	system(paste("rm", boundariesfile,
-		paste(boundariesfile, "out", sep="."),
-		paste(boundariesfile, "numsites.out", sep=".")))
+	#system(paste("rm", boundariesfile,
+	#	paste(boundariesfile, "out", sep="."),
+	#	paste(boundariesfile, "numsites.out", sep=".")))
 
 	# Uncomment this section if you have a kegg annotation description file of the genes and their products
-	genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
-	rownames(genecounts) <- genes$Locus
+	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
+	#rownames(genecounts) <- genes$Locus
 	
 	
 	# Uncomment this section if you DO NOT have a kegg annotation description file of the genes and their products
-	#genes <- matrix("", length(gff[,1]), 2)
-	#for (i in 1:length(gff[,1])) {
-	#	genes[i,1] <- strsplit(grep("locus_tag",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
-	#	genes[i,2] <- strsplit(grep("product",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
-	#}
-	write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t")
+	#This code relies on two tab separated columns at the end of your gff for Kegg Orthology and Kegg Pathways info
+	genes <- matrix("", length(gff[,1]), 4)
+	for (i in 1:length(gff[,1])) {
+		genes[i,1] <- strsplit(grep("locus_tag",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
+		genes[i,2] <- strsplit(grep("product",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
+		genes[i,3] <- as.character(gff$KO[i])
+		genes[i,4] <- as.character(gff$pathways[i])
+	}
+	colnames(genes) <- c("id", "product", "KO", "pathways")
+	write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t", row.names=FALSE)
 
 	# Perform differential fitness analysis
-	colnames(numsites) <- colnames(gff)[10:length(gff)]
+	colnames(numsites) <- colnames(gff)[12:length(gff)]
 	numsitesout <- data.frame(numsites[,(1:ctrl_reps)])
 	numsitesout[,ctrl_reps+1] <- rowMeans(numsites[,-(1:ctrl_reps)])
 	colnames(numsitesout)[ctrl_reps+1] <- "Expected"
-	genescds <- newCountDataSet(round(genecounts), c(rep(ctrl_pfx, ctrl_reps), rep("Expected", num_expected)))
+	colData <- data.frame(c(rep(ctrl_pfx, ctrl_reps), rep("Expected", num_expected)), condition = c(rep(ctrl_pfx, ctrl_reps),rep("Expected", num_expected)))
+	genescds <- DESeqDataSetFromMatrix(countData = round(genecounts), colData = colData, design = ~ condition)
+	#genescds <- newCountDataSet(round(genecounts), c(rep(ctrl_pfx, ctrl_reps), rep("Expected", num_expected)))
 	genescds$sizeFactor <- rep(1, length(genecounts[1,])) # This is manually set as 1 because we normalized by site above
 	genescds <- estimateDispersions(genescds)
-	res <- nbinomTest(genescds, "Expected", ctrl_pfx) 
+	genescds <- nbinomWaldTest(genescds)
+	res <- results(genescds, contrast = c("condition", ctrl_pfx, "Expected"))
+	print(head(res)) 
 	colnames(res)[4] <- paste(ctrl_pfx, "Mean", sep="")
 	colnames(res)[3] <- "ExpectedMean"
-	out <- cbind(res, genes[,2:5], numsitesout) # Uncomment if you have a kegg annotation
+	out <- cbind(res, genes[,1:4], numsitesout) # Uncomment if you have a kegg annotation
 	#out <- cbind(res, genes[,2:3], numsitesout) %>% tbl_df # Uncomment if you do not have a kegg annotation
 
 	# Perform bimodal clustering and essentiality calling and output results
 	library(mclust)
 	fit <- Mclust(out$log2FoldChange, G=1:2)
 	category <- rep("",length(out$id))
+	print(head(out, 10))
+	print(head(fit$classification, 10))
 	for (i in 1:length(out$id)) {
 		if (fit$classification[i] == 1 & out$log2FoldChange[i] < 0) {
 			category[i] <- "Reduced"
@@ -121,8 +134,10 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 			category[i] <- "Unchanged"
 		}
 	}
+
 	fit$uncertainty[which(out$log2FoldChange > 0)] <- 0
-	essentiality <- cbind(category, fit$uncertainty)
+	print(head(category, 10))
+	essentiality <- as.data.frame(cbind(category, fit$uncertainty))
 	colnames(essentiality) <- c("Essentiality", "Uncertainty")
 	out <- cbind(out, essentiality) 
 	write.table(out, file=paste(out_pfx, ".DESeq.tsv", sep=""), quote=FALSE, row.names=FALSE, sep="\t")
