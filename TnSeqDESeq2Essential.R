@@ -35,10 +35,11 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	rownames(counts.norm) <- sites$Pos
 	
 	# Initialize the list of genes, determine genome length
+	# Expects a standard gff file appended with Kegg Orthology and Pathways information appended at the end of each line, separated by tabs
 	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, skip=2, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")) 
 	#colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")
 	#genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
-	genomelength <- as.numeric(max(gff$end))
+	genomelength <- as.numeric(max(gff$end)*1.1)
 	gff <- tail(gff, n=-2)
 	gff <- gff[(gff$feature=="CDS"),]
 
