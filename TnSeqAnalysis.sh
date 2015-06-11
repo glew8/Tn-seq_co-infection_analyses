@@ -102,4 +102,4 @@ ASSEMBLY_PFX="$REFGENOME/$ASSEMBLY/$ASSEMBLY"
 
 # Smoothing (LOESS) and normalization (TMM)
 echo "Performing LOESS smoothing, normalization and differential abundance analysis on count data..."
-R --vanilla --args $CONTROL_PFX $CONTROL_REPS $TEST_PFX $TEST_REPS $ASSEMBLY_PFX $OUT_PFX $CUT $@ < ~/local/bin/TnSeqDESeq.R
+R --vanilla --args $CONTROL_PFX $CONTROL_REPS $TEST_PFX $TEST_REPS $ASSEMBLY_PFX $OUT_PFX $CUT $@ < ~/local/bin/TnSeqDESeq2.R
