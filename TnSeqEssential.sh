@@ -88,8 +88,8 @@ if [ $# -lt 1 ] ; then
   exit 1
 fi
 
-ASSEMBLY_PFX="/home1/02127/khturner/ref_genome/$ASSEMBLY/$ASSEMBLY"
+ASSEMBLY_PFX="$REFGENOME/$ASSEMBLY/$ASSEMBLY"
 
 # Smoothing (LOESS) and normalization (TMM)
 echo "Performing LOESS smoothing, normalization and obligate essentiality analysis on count data..."
-R --vanilla --args $CONTROL_PFX $CONTROL_REPS $ASSEMBLY_PFX $OUT_PFX $CUT $PSEUDO $@ < ~/local/bin/TnSeqDESeqEssential.R
+R --vanilla --args $CONTROL_PFX $CONTROL_REPS $ASSEMBLY_PFX $OUT_PFX $CUT $PSEUDO $@ < ~/local/bin/TnSeqDESeq2Essential.R
