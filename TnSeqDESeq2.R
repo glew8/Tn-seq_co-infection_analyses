@@ -13,9 +13,11 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	sites <- tail(sites, n=-1)
 	sites[is.na(sites)] <- 0
 	
-	# OPTIONAL - perform site filtering. Example: only consider sites identified in 2 or more of 4 replicates
+	# OPTIONAL - perform site filtering. Example: only consider sites identified in 2 or more of 6 replicates
 	#sites <- sites %>% mutate(numreps = (V1 > 0) + (V2 > 0) + (V3 > 0) + (V4 > 0)) %>% filter(numreps >= 2)
 	#sites <- sites[-6]
+	sites  <- sites %>% mutate(numreps = (V1 > 0 ) + (V2 > 0) + (V3 > 0) + (V4 > 0) + (V5 > 0) + (V6 > 0)) %>% filter(numreps >= 2)
+	sites <- sites[-8]
 	
 	# LOESS smooth data
 	for (i in 2:(length(sites))) { 
