@@ -27,28 +27,29 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	
 	# Normalize data by reads/site
 	library(DESeq2)
-	sitescds <- sites[,2:length(sites)] %>% round %>% newCountDataSet(c(rep(ctrl_pfx, ctrl_reps), rep(test_pfx, test_reps)))
+	colData <- data.frame(c(rep(ctrl_pfx, ctrl_reps), rep(test_pfx, test_reps)), condition=c(rep("untreated", ctrl_reps), rep("treated", test_reps)))
+	sitescds <- sites[,2:length(sites)] %>% round %>% DESeqDataSetFromMatrix(colData = colData, design = ~ condition)
 	sitescds <- estimateSizeFactors(sitescds)
 	counts.norm <- counts(sitescds, normalized=T)
 	rownames(counts.norm) <- sites$Pos
 	counts.df <- data.frame(counts.norm)
 
 	# Initialize the list of genes, read counts per gene, and number of independent Tn sites per gene
-	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, skip = 3) 
-	colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att")
-	gff <- tail(gff, n=-5)
+	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, skip=2, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways"))
+	gff <- tail(gff, n=-2)
+	genomelength <- as.numeric(max(gff$end)*1.1)
 	gff <- gff[(gff$feature=="CDS"),]
 	controlreps <- 0
 	testreps <- 0
 	for (c in 1:length(counts.norm[1,])) {
-		gff[,c+9] <- rep(1,length(gff[,1]))
+		gff[,c+11] <- rep(1,length(gff[,1]))
 		if (controlreps < ctrl_reps) {
 			controlreps <- controlreps + 1
-			colnames(gff)[c+9] <- paste(ctrl_pfx, controlreps, sep=".")
+			colnames(gff)[c+11] <- paste(ctrl_pfx, controlreps, sep=".")
 		}
 		else {
 			testreps <- testreps + 1
-			colnames(gff)[c+9] <- paste(test_pfx, testreps, sep=".")
+			colnames(gff)[c+11] <- paste(test_pfx, testreps, sep=".")
 		}
 	}
 	
@@ -56,7 +57,7 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	print("Binning read counts by gene boundaries")
 	boundariesfile <- paste(out_pfx, ".boundaries.tsv", sep="")
 	sitecountsfile <- paste(out_pfx, ".sitecounts.tsv", sep="")
-	write.table(gff[,c(4,5, 10:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
+	write.table(gff[,c(4,5, 12:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
 	write.table(counts.df, sitecountsfile, quote=FALSE, sep="\t", row.names=T)
 	system(paste("perl TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
@@ -69,30 +70,31 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
 	#rownames(genecounts) <- genes$Locus
 	#write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t")
-	
-	# Uncomment this section if you have a kegg annotation description file of the genes and their products
-	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
-	#rownames(genecounts) <- genes$Locus
-	#write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t")
 
 	# Uncomment this section if you DO NOT have a kegg annotation description file of the genes and their products
-	genes <- matrix("", length(gff[,1]), 2)
+	genes <- matrix("", length(gff[,1]), 4)
 	for (i in 1:length(gff[,1])) {
 		genes[i,1] <- strsplit(grep("locus_tag",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
 		genes[i,2] <- strsplit(grep("product",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
-	
+		genes[i,3] <- as.character(gff$KO[i])
+		genes[i,4] <- as.character(gff$pathways[i])	
 	}
-	#print("I finished the grep loop")	
+	colnames(genes) <- c("id", "product", "KO", "pathways")
+	write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t", row.names=FALSE)
+	
 	# Perform differential fitness analysis and output results
-	colnames(numsites) <- colnames(gff)[10:length(gff)]
-	genescds <- newCountDataSet(round(genecounts), c(rep(ctrl_pfx, ctrl_reps), rep(test_pfx, test_reps)))
+	colnames(numsites) <- colnames(gff)[12:length(gff)]
+	
+	genescds <-DESeqDataSetFromMatrix(countData = round(genecounts), colData=colData, design = ~ condition) 
 	genescds$sizeFactor <- rep(1, length(genecounts[1,])) # This is manually set as 1 because we normalized by site above
-	#genescds <- estimateDispersions(genescds, fitType="local", sharingMode="fit-only") # Use this if estimateDispersions fails
+	#genescds <- estimateDispersions(genescds, fitType="local") # Use this if estimateDispersions fails
 	genescds <- estimateDispersions(genescds)
-	res <- nbinomTest(genescds, ctrl_pfx, test_pfx) 
-	colnames(res)[3] <- paste(ctrl_pfx, "Mean", sep="")
-	colnames(res)[4] <- paste(test_pfx, "Mean", sep="")
-	res <- cbind(res, genes[,2:5], numsites) # Uncomment if you have a kegg annotation
+	genescds <- nbinomWaldTest(genescds)
+	res <- results(genescds, contrast = c("condition", "treated", "untreated"))
+	print(head(res)) 
+	#colnames(res)[3] <- paste(ctrl_pfx, "Mean", sep="")
+	#colnames(res)[4] <- paste(test_pfx, "Mean", sep="")
+	res <- cbind(res, genes[,1:4], numsites) # Uncomment if you have a kegg annotation
 	#res <- cbind(res, genes[,1:2], numsites) %>% tbl_df # Uncomment if you do not have a kegg annotation
 	write.table(res, file=paste(out_pfx, ".DESeq.tsv", sep=""), quote=FALSE, row.names=FALSE, sep="\t")
 	return(res)

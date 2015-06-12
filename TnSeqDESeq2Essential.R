@@ -82,9 +82,9 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	system(paste("perl TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
 	numsites <- read.table(paste(boundariesfile, "numsites.out", sep="."), header=T)[,-c(1,2)]
-	#system(paste("rm", boundariesfile,
-	#	paste(boundariesfile, "out", sep="."),
-	#	paste(boundariesfile, "numsites.out", sep=".")))
+	system(paste("rm", boundariesfile,
+		paste(boundariesfile, "out", sep="."),
+		paste(boundariesfile, "numsites.out", sep=".")))
 
 	# Uncomment this section if you have a kegg annotation description file of the genes and their products
 	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
@@ -116,8 +116,8 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	genescds <- nbinomWaldTest(genescds)
 	res <- results(genescds, contrast = c("condition", ctrl_pfx, "Expected"))
 	print(head(res)) 
-	colnames(res)[4] <- paste(ctrl_pfx, "Mean", sep="")
-	colnames(res)[3] <- "ExpectedMean"
+	#colnames(res)[4] <- paste(ctrl_pfx, "Mean", sep="")
+	#colnames(res)[3] <- "ExpectedMean"
 	out <- cbind(res, genes[,1:4], numsitesout) # Uncomment if you have a kegg annotation
 	#out <- cbind(res, genes[,2:3], numsitesout) %>% tbl_df # Uncomment if you do not have a kegg annotation
 
