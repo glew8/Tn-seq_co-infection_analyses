@@ -92,6 +92,7 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	#genescds <- estimateDispersions(genescds, fitType="local") # Use this if estimateDispersions fails
 	genescds <- estimateDispersions(genescds)
 	genescds <- nbinomWaldTest(genescds)
+	
 	res <- results(genescds, contrast = c("condition", "treated", "untreated"))
 	print(head(res)) 
 	#colnames(res)[3] <- paste(ctrl_pfx, "Mean", sep="")
