@@ -30,7 +30,7 @@ while (<STDIN>) {
 			`wget "http://www.kegg.jp/dbget-bin/www_bget?$gene" 2> /dev/null`;
 			open GENEREC, "www_bget?$gene" or die "Unable to open file www_bget?$gene for reading data: $!\n";
 			while ($geneline = <GENEREC>) {
-				if ( $geneline =~ /<nobr>Orthology<\/nobr>/ ) {
+				if ( $geneline =~ /KO<\/nobr>/ ) {
 					$nextline = <GENEREC>;
 					print "\t".join(';', $nextline =~ /<nobr><a href="\/dbget-bin\/www_bget\?[^"]+">([^<]+)</g);				}
 				elsif ( $geneline =~ /<nobr>Pathway<\/nobr>/ ) {
