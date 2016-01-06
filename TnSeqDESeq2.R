@@ -64,9 +64,9 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	system(paste("perl TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
 	numsites <- read.table(paste(boundariesfile, "numsites.out", sep="."), header=T)[,-c(1,2)]
-	system(paste("rm", boundariesfile,
-		paste(boundariesfile, "out", sep="."),
-		paste(boundariesfile, "numsites.out", sep=".")))
+	#system(paste("rm", boundariesfile,
+	#	paste(boundariesfile, "out", sep="."),
+	#	paste(boundariesfile, "numsites.out", sep=".")))
 
 	# Uncomment this section if you have a kegg annotation description file of the genes and their products
 	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
