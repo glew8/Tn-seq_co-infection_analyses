@@ -94,7 +94,10 @@ echo "$PREFIX: Searching for reads with an IR in right location..."
 let "MIN = ${#PRIMER} + ${#IR} + 2"
 let "MAX = ${#PRIMER} + ${#IR} + 8"
 fqgrep -m $MISMATCHES -r -p $PRIMER$IR $R1.fastq | awk -v min=$MIN -v max=$MAX -F "\t" '(($8 >= min && $8 <= max) || $1=="read name")' | trimmer --5-prime > $PREFIX-IR-clip.fastq
-flexbar -f fastq-i1.8 -n 16 -ao 8 -m 18 -z 35 -ae RIGHT -a ~/adapters/3_adapter_seq.fasta -r $PREFIX-IR-clip.fastq -t $PREFIX-IR-clip.trim >> /dev/null 2>&1
+
+#I use for "flexbar_executable" for personal reasons- you probably want to switch t whatever your flexbar command is... probably "flexbar"
+#
+flexbar_executable -f fastq-i1.8 -n 16 -ao 8 -m 18 -z 35 -ae RIGHT -a ~/adapters/3_adapter_seq.fasta -r $PREFIX-IR-clip.fastq -t $PREFIX-IR-clip.trim >> /dev/null 2>&1
 mv $PREFIX-IR-clip.trim.fastq $PREFIX-IR-clip.fastq
 IRSFOUND=$(egrep -c '^@HWI|^@M' $PREFIX-IR-clip.fastq)
 echo "Molecules with IR in right location:" >> $PREFIX-TnSeq.txt
