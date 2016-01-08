@@ -36,13 +36,15 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	
 	# Initialize the list of genes, determine genome length
 	# Expects a standard gff file appended with Kegg Orthology and Pathways information appended at the end of each line, separated by tabs
-	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, skip=2, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")) 
+	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")) 
 	#colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")
 	#genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
 	genomelength <- as.numeric(max(gff$end)*1.1)
-	gff <- tail(gff, n=-2)
-	gff <- gff[(gff$feature=="CDS"),]
-
+	#print(head(gff))
+	#gff <- tail(gff, n=-2)
+	#change this value if your gff file contains anything besides genes
+	gff <- gff[(gff$feature=="gene"),]
+	#print(head(gff))
 	# Generate pseudo-datasets with the same number of insertion sites and total reads mapping to those sites, randomly distributed across the genome
 	print("Generating pseudo-datasets")
 	counts.df <- data.frame(counts.norm)
@@ -79,28 +81,22 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	sitecountsfile <- paste(out_pfx, ".sitecounts.tsv", sep="")
 	write.table(gff[,c(4,5, 12:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
 	write.table(counts.df, sitecountsfile, quote=FALSE, sep="\t", row.names=F)
-	system(paste("perl TnGeneBin.pl", boundariesfile, sitecountsfile))
+	system(paste("perl ~/local/bin/TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
 	numsites <- read.table(paste(boundariesfile, "numsites.out", sep="."), header=T)[,-c(1,2)]
 	system(paste("rm", boundariesfile,
 		paste(boundariesfile, "out", sep="."),
 		paste(boundariesfile, "numsites.out", sep=".")))
 
-	# Uncomment this section if you have a kegg annotation description file of the genes and their products
-	#genes <- read.delim(file=paste(gff_pfx, ".gene.products.kegg.txt", sep=""), sep="\t", header=TRUE)
-	#rownames(genecounts) <- genes$Locus
-	
-	
 	# Uncomment this section if you DO NOT have a kegg annotation description file of the genes and their products
-	#This code relies on two tab separated columns at the end of your gff for Kegg Orthology and Kegg Pathways info
-	genes <- matrix("", length(gff[,1]), 4)
+	genes <- data.frame(id = rep("", length(gff[,1]), stringsAsFactors = FALSE))#, length(gff[,1]), 1)
+	genes$id <- as.character(genes$id)
+	
 	for (i in 1:length(gff[,1])) {
-		genes[i,1] <- strsplit(grep("locus_tag",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
-		genes[i,2] <- strsplit(grep("product",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
-		genes[i,3] <- as.character(gff$KO[i])
-		genes[i,4] <- as.character(gff$pathways[i])
+		genes$id[i] <- strsplit(grep("locus_tag",strsplit(as.character(gff$att[i]),";")[[1]], value=T),"=")[[1]][2]
 	}
-	colnames(genes) <- c("id", "product", "KO", "pathways")
+	
+	colnames(genes) <- c("id")
 	write.table(genecounts, paste(out_pfx, ".genecounts.tsv", sep=""), quote=FALSE, sep="\t", row.names=FALSE)
 
 	# Perform differential fitness analysis
@@ -118,7 +114,8 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	print(head(res)) 
 	#colnames(res)[4] <- paste(ctrl_pfx, "Mean", sep="")
 	#colnames(res)[3] <- "ExpectedMean"
-	out <- cbind(res, genes[,1:4], numsitesout) # Uncomment if you have a kegg annotation
+	out <- cbind(res, genes$id, numsitesout) # Uncomment if you have a kegg annotation
+	colnames(out)[6] <- "id"
 	#out <- cbind(res, genes[,2:3], numsitesout) %>% tbl_df # Uncomment if you do not have a kegg annotation
 
 	# Perform bimodal clustering and essentiality calling and output results
