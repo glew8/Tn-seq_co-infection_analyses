@@ -30,8 +30,8 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	colData <- data.frame(c(rep(ctrl_pfx, ctrl_reps)), condition = rep("untreated", ctrl_reps))
 	sitescds <- sites[,2:length(sites)] %>% round %>% DESeqDataSetFromMatrix(colData = colData, design= ~ 1)
 	sitescds <- estimateSizeFactors(sitescds)
-	
-	counts.norm <- counts(sitescds, normalized=T)
+	#Output the normalized counts
+	counts.norm <- counts(sitescds, normalized=F)
 	rownames(counts.norm) <- sites$Pos
 	
 	# Initialize the list of genes, determine genome length
@@ -115,7 +115,7 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	#colnames(res)[4] <- paste(ctrl_pfx, "Mean", sep="")
 	#colnames(res)[3] <- "ExpectedMean"
 	out <- cbind(res, genes$id, numsitesout) # Uncomment if you have a kegg annotation
-	colnames(out)[6] <- "id"
+	colnames(out)[7] <- "id"
 	#out <- cbind(res, genes[,2:3], numsitesout) %>% tbl_df # Uncomment if you do not have a kegg annotation
 
 	# Perform bimodal clustering and essentiality calling and output results
