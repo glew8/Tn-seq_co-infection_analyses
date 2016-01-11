@@ -36,7 +36,7 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	
 	# Initialize the list of genes, determine genome length
 	# Expects a standard gff file appended with Kegg Orthology and Pathways information appended at the end of each line, separated by tabs
-	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")) 
+	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att")) 
 	#colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")
 	#genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
 	genomelength <- as.numeric(max(gff$end)*1.1)
@@ -64,14 +64,14 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	controlreps <- 0
 	expreps <- 0
 	for (c in 1:length(counts.norm[1,])) {
-		gff[,c+11] <- rep(1,length(gff[,1]))
+		gff[,c+9] <- rep(1,length(gff[,1]))
 		if (controlreps < ctrl_reps) {
 			controlreps <- controlreps + 1
-			colnames(gff)[c+11] <- paste(ctrl_pfx, controlreps, sep=".")
+			colnames(gff)[c+9] <- paste(ctrl_pfx, controlreps, sep=".")
 		}
 		else {
 			expreps <- expreps + 1
-			colnames(gff)[c+11] <- paste("Expected", expreps, sep=".")
+			colnames(gff)[c+9] <- paste("Expected", expreps, sep=".")
 		}
 	}
 
@@ -79,7 +79,7 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	print("Binning read counts by gene boundaries")
 	boundariesfile <- paste(out_pfx, ".boundaries.tsv", sep="")
 	sitecountsfile <- paste(out_pfx, ".sitecounts.tsv", sep="")
-	write.table(gff[,c(4,5, 12:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
+	write.table(gff[,c(4,5, 10:length(gff))], boundariesfile, quote=FALSE, sep="\t", row.names=F)
 	write.table(counts.df, sitecountsfile, quote=FALSE, sep="\t", row.names=F)
 	system(paste("perl ~/local/bin/TnGeneBin.pl", boundariesfile, sitecountsfile))
 	genecounts <- read.table(paste(boundariesfile, "out", sep="."), header=T)[,-c(1,2)]
@@ -122,8 +122,6 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	library(mclust)
 	fit <- Mclust(out$log2FoldChange, G=1:2)
 	category <- rep("",length(out$id))
-	print(head(out, 10))
-	print(head(fit$classification, 10))
 	for (i in 1:length(out$id)) {
 		if (fit$classification[i] == 1 & out$log2FoldChange[i] < 0) {
 			category[i] <- "Reduced"
