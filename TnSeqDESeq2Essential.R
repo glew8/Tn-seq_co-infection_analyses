@@ -107,7 +107,8 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	colData <- data.frame(c(rep(ctrl_pfx, ctrl_reps), rep("Expected", num_expected)), condition = c(rep(ctrl_pfx, ctrl_reps),rep("Expected", num_expected)))
 	genescds <- DESeqDataSetFromMatrix(countData = round(genecounts), colData = colData, design = ~ condition)
 	#genescds <- newCountDataSet(round(genecounts), c(rep(ctrl_pfx, ctrl_reps), rep("Expected", num_expected)))
-	genescds$sizeFactor <- rep(1, length(genecounts[1,])) # This is manually set as 1 because we normalized by site above
+	#genescds$sizeFactor <- rep(1, length(genecounts[1,])) # This is manually set as 1 because we normalized by site above
+	genescds <- estimateSizeFactors(genescds)
 	genescds <- estimateDispersions(genescds)
 	genescds <- nbinomWaldTest(genescds)
 	res <- results(genescds, contrast = c("condition", ctrl_pfx, "Expected"))
