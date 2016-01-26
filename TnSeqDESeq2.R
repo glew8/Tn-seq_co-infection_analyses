@@ -38,9 +38,9 @@ TnSeqDESeq <- function(ctrl_pfx, ctrl_reps, test_pfx, test_reps, gff_pfx, out_pf
 	counts.df <- data.frame(counts.norm)
 
 	# Initialize the list of genes, read counts per gene, and number of independent Tn sites per gene
-	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, skip=2, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att"))
+	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att"))
 	print(head(gff))
-	gff <- tail(gff, n=-2)
+	#gff <- tail(gff, n=-2)
 	genomelength <- as.numeric(max(gff$end)*1.1)
 	gff <- gff[(gff$feature=="gene"),]
 	controlreps <- 0
