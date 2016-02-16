@@ -35,7 +35,7 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	rownames(counts.norm) <- sites$Pos
 	
 	# Initialize the list of genes, determine genome length
-	# Expects a standard gff file appended with Kegg Orthology and Pathways information appended at the end of each line, separated by tabs
+	# No longer expects KEGG or pathway info here.  You'll have to combine that yourself outside fo this script
 	gff <- read.delim(file=paste(gff_pfx, ".trunc.gff", sep=""), sep="\t", fill=TRUE, header=FALSE, col.names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att")) 
 	#colnames(gff) <- c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "att", "KO", "pathways")
 	#genomelength <- as.numeric(strsplit(as.character(gff[3,1]), " ")[[1]][4])
