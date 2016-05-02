@@ -79,7 +79,7 @@ BOWTIEREF=$REFGENOME/$ASSEMBLY/$ASSEMBLY
 echo "Performing TnSeq analysis on $PREFIX..."
 echo "TnSeq processing stats for $PREFIX" > $PREFIX-TnSeq.txt
 echo "Total sequences: " >> $PREFIX-TnSeq.txt
-egrep -c '^@HWI|^@M|^@NS|^@SRR' $R1.fastq >> $PREFIX-TnSeq.txt
+egrep -c '^@HWI|^@M|^@NS|^@SRR|^@' $R1.fastq >> $PREFIX-TnSeq.txt
 
 # Reads with primer
 echo "$PREFIX: Searching for reads with primer..."
@@ -99,7 +99,7 @@ fqgrep -m $MISMATCHES -r -p $PRIMER$IR $R1.fastq | awk -v min=$MIN -v max=$MAX -
 #
 flexbar_executable -f fastq-i1.8 -n 16 -ao 8 -m 18 -z 35 -ae RIGHT -a ~/adapters/3_adapter_seq.fasta -r $PREFIX-IR-clip.fastq -t $PREFIX-IR-clip.trim >> /dev/null 2>&1
 mv $PREFIX-IR-clip.trim.fastq $PREFIX-IR-clip.fastq
-IRSFOUND=$(egrep -c '^@HWI|^@M' $PREFIX-IR-clip.fastq)
+IRSFOUND=$(egrep -c '^@HWI|^@M|^@' $PREFIX-IR-clip.fastq)
 echo "Molecules with IR in right location:" >> $PREFIX-TnSeq.txt
 echo $IRSFOUND >> $PREFIX-TnSeq.txt
 
