@@ -1,8 +1,8 @@
 # Defined as a function, return value is table of differential fitness results with essentiality calls (source into R/RStudio for interactive analyses)
-
 TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, num_expected, in_files) {
 	# Read in sites files
 	library(dplyr)
+	library(readr)
 	sites <- data.frame(Pos=c(0)) 
 	for (i in 1:length(in_files)) {
 		newsites <- read.table(paste(paste(in_files[i], in_files[i], sep="/"), "sites.txt", sep="-")) 
@@ -51,10 +51,13 @@ TnSeqDESeqEssential <- function(ctrl_pfx, ctrl_reps, gff_pfx, out_pfx, to_trim, 
 	counts.df$Pos <- as.numeric(rownames(counts.df))
 	numreads <- sum(counts.norm)/ctrl_reps
 	numsites <- length(which(counts.norm>0))/ctrl_reps
+	##read in list of possible TA sites from "gff_pfx_TAsites.tsv" and sample from only TA sites to calculate essential genes
+	TA_sites <- read_tsv(paste0(gff_pfx, "_TAsites.tsv"))
 	for (i in 1:num_expected) {
-		expected <- data.frame(Pos=sample(1:genomelength, numsites), Exp=sample(sites$V1, numsites)) %>% arrange(Pos)
+		print(paste0("Build null dataset ", i))
+		expected <- data.frame(Pos=sample(TA_sites$sites, numsites), Exp=sample(sites$V1, numsites)) %>% arrange(Pos)
 		colnames(expected)[2] <- paste("Expected", i, sep=".")
-		counts.df <- merge(counts.df, expected, by="Pos", all=T) %>% arrange(Pos)
+		print(system.time(counts.df <- merge(counts.df, expected, by="Pos", all=T)))# %>% arrange(Pos)
 		counts.df[is.na(counts.df)] <- 0
 	}
 	rownames(counts.df) <- counts.df$Pos
