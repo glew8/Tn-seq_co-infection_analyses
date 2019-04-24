@@ -40,6 +40,10 @@ to_trim
 in_files = c("Pg-1", "Pg-2")
 in_files
 
+errors <- file(paste("./Essentials_output/", paste(out_pfx, ".log", sep=""), sep=""))
+sink(errors, append = TRUE)
+sink(errors, append = TRUE, type = "message")
+
 write(out_pfx, file = paste("./Essentials_output/", paste(out_pfx, "_stats.txt", sep=""), sep=""))
 write(paste( "\n", "input files:", sep=""), file = paste("./Essentials_output/", paste(out_pfx, "_stats.txt", sep=""), sep=""), append = TRUE)
 write(in_files, file = paste("./Essentials_output/", paste(out_pfx, "_stats.txt", sep=""), sep=""), append = TRUE)
@@ -49,14 +53,16 @@ write(paste("\n", "to trim: ", to_trim, sep=""), file = paste("./Essentials_outp
 write(paste("number of expected datasets: ", num_expected, sep=""), file = paste("./Essentials_output/", paste(out_pfx, "_stats.txt", sep=""), sep=""), append = TRUE)
 
 ##################################################################################################################
-# Read in sites files
+# Read in sites files - altered from standard script because slippage script switches column order
 library(dplyr)
 sites <- data.frame(Pos=c(0)) 
 for (i in 1:length(in_files)) {
-  newsites <- read.table(paste(paste(in_files[i], sep="/"), "sites.txt", sep="-")) 
-  colnames(newsites) <- c(paste("V", i, sep=""), "Pos")
-  newsites <- tail(newsites, n=-to_trim) #comment if to_trim=0
-  newsites <- arrange(newsites,Pos)
+  newsites <- read.table(paste(paste(in_files[i], sep="/"), "sites-slippage.txt", sep="-")) 
+  colnames(newsites) <- c("Pos", "reads")
+  #newsites <- arrange(newsites, reads) #For trimming >0
+  #newsites <- head(newsites, n=-to_trim) %>% arrange(Pos) #For trimming >0
+  newsites <- arrange(newsites, Pos) #For no trimming
+  colnames(newsites) <- c("Pos", paste("V", i, sep=""))
   sites <- merge(sites, newsites, all=T) 
 }
 sites <- tail(sites, n=-1)
@@ -169,7 +175,7 @@ colnames(numcountsout)[test_reps+3] <- "Expected_numreads"
 #We consider betaPrior=FALSE as the less conservative analysis. It is more likely to identify genes with a large l2fc simply because the data is noisy
 genescds_F <- DESeqDataSetFromMatrix(countData = round(genecounts), colData = colData, design = ~ condition)
 genescds_F <- estimateSizeFactors(genescds_F)
-genescds_F <- estimateDispersions(genescds_F) #can set fitType="local" if getting flag at this step for some samples
+genescds_F <- estimateDispersions(genescds_F, fitType="local") #can set fitType="local" if getting flag at this step for some samples
 genescds_F <- nbinomWaldTest(genescds_F, betaPrior=FALSE)
 res_F <- results(genescds_F, cooksCutoff = FALSE, contrast = c("condition", test_pfx, "Expected"))
 print(head(res_F)) 
@@ -236,7 +242,7 @@ write.csv(out_F, file=paste("./Essentials_output/", paste(out_pfx, ".FALSE.DESeq
 #betaPrior=TRUE is also the legacy DESeq2 option prior to version 1.16 (November 2016)
 genescds_T <- DESeqDataSetFromMatrix(countData = round(genecounts), colData = colData, design = ~ condition)
 genescds_T <- estimateSizeFactors(genescds_T)
-genescds_T <- estimateDispersions(genescds_T) #can set fitType="local" if getting flag at this step for some samples
+genescds_T <- estimateDispersions(genescds_T, fitType="local") #can set fitType="local" if getting flag at this step for some samples
 genescds_T <- nbinomWaldTest(genescds_T, betaPrior=TRUE)
 res_T <- results(genescds_T, cooksCutoff = FALSE, contrast = c("condition", test_pfx, "Expected"))
 print(head(res_T)) 
@@ -300,3 +306,7 @@ write.csv(out_T, file=paste("./Essentials_output/", paste(out_pfx, ".TRUE.DESeq.
 #Combine betaPrior=TRUE and betaPrior=FALSE data
 out_combo <- cbind(out_F[,1:6], out_F[,(test_reps+test_reps+12):(test_reps+test_reps+13)], out_T[,1:6], out_T[,(test_reps+test_reps+12):(test_reps+test_reps+13)], out_T[,7:(test_reps+test_reps+11)])
 write.csv(out_combo, file=paste("./Essentials_output/", paste(out_pfx, ".combo.DESeq.csv", sep=""), sep=""), row.names=T)
+
+sink()
+sink(type="message")
+closeAllConnections()
